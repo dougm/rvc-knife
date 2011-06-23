@@ -1,0 +1,112 @@
+= DESCRIPTION:
+
+rvc-knife - Chef knife module for RVC (Ruby vSphere Console)
+
+This module integrates a subset of Chef's knife functionality with RVC.  Nodes returned by knife search can be applied to VM operations and VMs can be queried for Chef node attributes.
+
+= REQUIREMENTS:
+
+== RVC:
+
+* RVC version 1.4.1 or higher - https://github.com/vmware/rvc
+
+== Chef:
+
+* Chef version 0.9.12 or higher - http://www.opscode.com/chef
+
+== Installation:
+
+  % gem install rvc
+  % git clone https://github.com/dougm/rvc-knife.git
+  % mkdir ~/.rvc
+  % ln -s lib/rvc/modules/knife.rb ~/.rvc/
+
+= USAGE:
+
+Chef knife configuration is expected to be in the appropriate place(s), such as ~/.chef/knife.rb
+
+== knife.mark
+
+The 'knife.mark' command should be given the same QUERY parameter that would be given to 'knife search node QUERY'. The VirtualMachine(s) matching the chef node(s) of this query are saved as an RVC mark.   The mark can be then be applied to any RVC commands using the '~mark_name' lookup syntax.
+
+Note that the 'rvc mark' command only allows '\w+' as the name, any characters that do not match '\w' are replaced with an underscore '_'.
+
+  % rvc user:pass@vcenter-instance
+  /vcenter-instance> knife.mark role:test-harness
+  created mark 'role_test_harness' with 76 VMs
+
+  /vcenter-instance> show ~role_test_harness
+  /vcenter-instance/datacenter/vm/testvm-046: VirtualMachine
+  /vcenter-instance/datacenter/vm/testvm-059: VirtualMachine
+  /vcenter-instance/datacenter/vm/testvm-018: VirtualMachine
+  /vcenter-instance/datacenter/vm/testvm-075: VirtualMachine
+  ...
+
+You can also use the 'name' option:
+
+  /vcenter-instance> knife.mark --name testvms role:test_harness
+  created mark 'testvms' with 76 VMs
+
+Example to power on all VMs in this role:
+
+  /vcenter-instance> vm.on ~testvms
+
+Example to destroy all your Windows VMs:
+
+  /vcenter-instance> knife.mark os:windows
+  created mark 'os_windows' with 18 VMs
+  /vcenter-instance> vm.kill ~os_windows
+
+== knife.show
+
+The 'knife.show' command is just like 'knife node show' for given VM.
+
+Example default, where 'em4j-eng050' is the VM name:
+
+  /vcenter-instance> cd datacenter/vm
+
+  /vcenter-instance/datacenter/vm> knife.show em4j-eng050
+  Node Name:   w1-em4j050.eng.vmware.com
+  Environment: _default
+  FQDN:        w1-em4j050.eng.vmware.com
+  IP:          10.136.28.75
+  Run List:    role[em4j-harness]
+  Roles:       swaps-1x, em4j, em4j-harness, vcva-clovervm-vm, ...
+  Recipes:     hugetlb, vsphere::vminfo, hudson::node_ssh, swaps::linux, ...
+  Platform:    ubuntu 10.04
+
+Example with attributes:
+
+  /vcenter-instance/datacenter/vm> knife.show em4j-eng050 -a hugetlb.vm
+  hugetlb.vm:
+    hugepages_treat_as_movable:  0
+    hugetlb_shm_group:           0
+    nr_hugepages:                548
+    nr_overcommit_hugepages:     0
+
+= ISSUES:
+
+'knife.show -a' with Chef 0.10.0: http://tickets.opscode.com/browse/CHEF-2437
+
+= LICENSE & AUTHOR:
+
+Author:: Doug MacEachern (<dougm@vmware.com>)
+Copyright:: 2011 VMware, Inc.  All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
